@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>売上入力</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 16px;
+      background: #f7f7f7;
+      font-size: 18px;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #ffffff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    h1 {
+      font-size: 24px;
+      margin-top: 0;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    label {
+      display: block;
+      margin-top: 14px;
+      margin-bottom: 6px;
+      font-weight: bold;
+    }
+
+    input, textarea, button {
+      width: 100%;
+      box-sizing: border-box;
+      font-size: 18px;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+
+    button {
+      margin-top: 24px;
+      background: #06c755;
+      color: white;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      background: #9ddfb9;
+      cursor: not-allowed;
+    }
+
+    .message {
+      margin-top: 16px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .error {
+      color: #d93025;
+    }
+
+    .success {
+      color: #188038;
+    }
+
+    .note {
+      font-size: 14px;
+      color: #666;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>売上入力</h1>
+
+    <label for="salesDate">売上日</label>
+    <input type="date" id="salesDate">
+
+    <label for="storeCode">店舗コード</label>
+    <input type="text" id="storeCode" value="001" readonly>
+
+    <label for="storeName">店舗名</label>
+    <input type="text" id="storeName" value="テスト店" readonly>
+
+    <label for="totalSales">売上合計</label>
+    <input type="number" id="totalSales" inputmode="numeric">
+
+    <label for="cashSales">現金売上</label>
+    <input type="number" id="cashSales" inputmode="numeric">
+
+    <label for="cashlessSales">キャッシュレス売上</label>
+    <input type="number" id="cashlessSales" inputmode="numeric">
+
+    <label for="customerCount">客数</label>
+    <input type="number" id="customerCount" inputmode="numeric">
+
+    <label for="note">備考（任意）</label>
+    <textarea id="note" placeholder="必要な場合のみ入力"></textarea>
+
+    <button id="submitButton" onclick="submitSales()">送信する</button>
+
+    <div id="message" class="message"></div>
+    <div class="note">※ 最初はテスト店舗（001 / テスト店）で確認します</div>
+  </div>
+
+  <script>
+    const LIFF_ID = 'YOUR_LIFF_ID';
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxzTQ_iDPaMM1CEuWhIRI6PaQTllyMFTxqDAt86loEmmX3r7pbbqUfDxCK_9qddch7feQ/exec';
+
+    async function initLiff() {
+      try {
+        await liff.init({ liffId: LIFF_ID });
+      } catch (e) {
+        showMessage('LIFFの初期化に失敗しました', true);
+        console.error(e);
+      }
+    }
+
+    function setToday() {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('salesDate').value = today;
+    }
+
+    function showMessage(text, isError = false) {
+      const message = document.getElementById('message');
+      message.textContent = text;
+      message.className = 'message ' + (isError ? 'error' : 'success');
+    }
+
+    function validateInput(data) {
+      if (!data.salesDate) return '売上日を入力してください';
+      if (!data.totalSales) return '売上合計を入力してください';
+      if (!data.cashSales) return '現金売上を入力してください';
+      if (!data.cashlessSales) return 'キャッシュレス売上を入力してください';
+      if (!data.customerCount) return '客数を入力してください';
+
+      const total = Number(data.totalSales);
+      const cash = Number(data.cashSales);
+      const cashless = Number(data.cashlessSales);
+      const customerCount = Number(data.customerCount);
+
+      if (isNaN(total) || isNaN(cash) || isNaN(cashless) || isNaN(customerCount)) {
+        return '数字の入力内容を確認してください';
+      }
+
+      if (total !== cash + cashless) {
+        return '売上合計と内訳（現金＋キャッシュレス）が一致していません';
+      }
+
+      return '';
+    }
+
+    async function submitSales() {
+      const button = document.getElementById('submitButton');
+      button.disabled = true;
+      showMessage('');
+
+      const data = {
+        salesDate: document.getElementById('salesDate').value,
+        storeCode: document.getElementById('storeCode').value,
+        storeName: document.getElementById('storeName').value,
+        totalSales: document.getElementById('totalSales').value,
+        cashSales: document.getElementById('cashSales').value,
+        cashlessSales: document.getElementById('cashlessSales').value,
+        customerCount: document.getElementById('customerCount').value,
+        note: document.getElementById('note').value,
+        inputUser: 'LINEテスト'
+      };
+
+      const errorMessage = validateInput(data);
+      if (errorMessage) {
+        showMessage(errorMessage, true);
+        button.disabled = false;
+        return;
+      }
+
+      try {
+        const response = await fetch(WEB_APP_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          showMessage('登録しました');
+          setTimeout(() => {
+            if (typeof liff !== 'undefined' && liff.isInClient()) {
+              liff.closeWindow();
+            }
+          }, 1200);
+        } else {
+          showMessage('エラー: ' + result.message, true);
+          button.disabled = false;
+        }
+
+      } catch (error) {
+        console.error(error);
+        showMessage('送信に失敗しました。通信状態をご確認ください。', true);
+        button.disabled = false;
+      }
+    }
+
+    setToday();
+    initLiff();
+  </script>
+</body>
+</html>
