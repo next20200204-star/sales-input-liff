@@ -138,26 +138,15 @@
     }
 
     function validateInput(data) {
-      if (!data.salesDate) return '売上日を入力してください';
-      if (!data.totalSales) return '売上合計を入力してください';
-      if (!data.cashSales) return '現金売上を入力してください';
-      if (!data.cashlessSales) return 'キャッシュレス売上を入力してください';
-      if (!data.customerCount) return '客数を入力してください';
+  if (!data.salesDate) return '売上日を入力してください';
+  if (!data.totalSales) return '売上合計を入力してください';
 
-      const total = Number(data.totalSales);
-      const cash = Number(data.cashSales);
-      const cashless = Number(data.cashlessSales);
-      const customerCount = Number(data.customerCount);
+  const total = Number(data.totalSales);
+  if (isNaN(total)) {
+    return '売上合計は数字で入力してください';
+  }
 
-      if (isNaN(total) || isNaN(cash) || isNaN(cashless) || isNaN(customerCount)) {
-        return '数字の入力内容を確認してください';
-      }
-
-      if (total !== cash + cashless) {
-        return '売上合計と内訳（現金＋キャッシュレス）が一致していません';
-      }
-
-      return '';
+  return '';
     }
 
     async function submitSales() {
@@ -214,5 +203,6 @@
 </body>
 
 </html>
+
 
 
