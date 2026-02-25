@@ -191,33 +191,27 @@
         return;
       }
 
-      try {
-        const response = await fetch(WEB_APP_URL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(data)
-        });
+      try {await fetch(WEB_APP_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(data)
+  });
 
-        const result = await response.json();
+  showMessage('登録しました');
+  setTimeout(() => {
+    if (typeof liff !== 'undefined' && liff.isInClient()) {
+      liff.closeWindow();
+    }
+  }, 1200);
 
-        if (result.success) {
-          showMessage('登録しました');
-          setTimeout(() => {
-            if (typeof liff !== 'undefined' && liff.isInClient()) {
-              liff.closeWindow();
-            }
-          }, 1200);
-        } else {
-          showMessage('エラー: ' + result.message, true);
-          button.disabled = false;
-        }
-
-      } catch (error) {
-        console.error(error);
-        showMessage('送信に失敗しました。通信状態をご確認ください。', true);
-        button.disabled = false;
+} catch (error) {
+  console.error(error);
+  showMessage('送信に失敗しました。通信状態をご確認ください。', true);
+  button.disabled = false;
+       
       }
     }
 
@@ -227,3 +221,4 @@
 </body>
 
 </html>
+
