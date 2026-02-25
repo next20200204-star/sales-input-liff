@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>売上入力</title>
+  <title>日次売上報告</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <style>
     body {
@@ -88,21 +88,19 @@
 </head>
 <body>
   <div class="container">
-    <h1>売上入力</h1>
+    <h1>日次売上報告</h1>
 
     <label for="salesDate">売上日</label>
     <input type="date" id="salesDate">
 
     <label for="storeCode">店舗コード</label>
-    <input type="text" id="storeCode" value="001" readonly>
+    <input type="text" id="storeCode" readonly>
 
     <label for="storeName">店舗名</label>
-    <input type="text" id="storeName" value="テスト店" readonly>
+    <input type="text" id="storeName" readonly>
 
     <label for="totalSales">売上合計</label>
     <input type="number" id="totalSales" inputmode="numeric">
-
-    
 
     <label for="note">備考（任意）</label>
     <textarea id="note" placeholder="必要な場合のみ入力"></textarea>
@@ -110,12 +108,94 @@
     <button id="submitButton" onclick="submitSales()">送信する</button>
 
     <div id="message" class="message"></div>
-    <div class="note">※ 最初はテスト店舗（001 / テスト店）で確認します</div>
+    <div class="note">※ 店舗はURLから自動判定されます</div>
   </div>
 
   <script>
     const LIFF_ID = '2009229353-vvVZqD0g';
     const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxzTQ_iDPaMM1CEuWhIRI6PaQTllyMFTxqDAt86loEmmX3r7pbbqUfDxCK_9qddch7feQ/exec';
+
+    // ここに80店舗分を入れていきます
+    const STORE_MAP = {
+     '1300': '久留米本店',
+  '1301': 'FLAG天神',
+  '1303': '新宮',
+  '1304': '曽根バイパス',
+  '1311': '都城川東',
+  '1312': '佐賀西',
+  '1318': '日向',
+  '1320': '大塔',
+  '1321': '玉名',
+  '1324': '志免',
+  '1328': '島原',
+  '1332': '稲佐',
+  '1333': '柳川',
+  '1336': '宇佐',
+  '1338': '中山',
+  '1341': '高鍋',
+  '1345': '大牟田北',
+  '1346': '宮崎北バイパス',
+  '1347': '熊本浜線',
+  '1352': '大分三重',
+  '1353': '伊万里',
+  '1354': '甘木',
+  '1356': 'コスタ行橋',
+  '1364': '佐賀兵庫',
+  '1365': '吉野',
+  '1366': '日田',
+  '1367': 'シュロアモール筑紫野',
+  '1370': '八女',
+  '1371': '中津',
+  '1374': '春日',
+  '1377': '大村',
+  '1415': 'SS姶良',
+  '1420': 'SS与次郎',
+  '1434': 'SSマークイズ',
+  '1436': 'SSゆめタウン光の森',
+  '1437': 'SS浦添',
+  '1440': 'SSサクラマチ',
+  '1445': 'SSゆめタウン久留米',
+  '1450': 'SSアミュ鹿児島',
+  '1451': 'SSアミュ宮崎',
+  '1453': 'SS天神',
+  '1454': 'SSアミュ熊本',
+  '1467': 'SS飯塚',
+  '1527': 'SS天神フタタビル',
+  '1530': 'SS博多',
+  '1531': 'SS小倉',
+  '1533': 'SS長崎ココウォーク',
+  '1553': 'SS佐世保',
+  '1574': 'SS博多駅前',
+  '1576': 'SSモラージュ佐賀',
+  '1604': 'SSゆめタウンはません',
+  '1618': 'SS久留米',
+  '1621': 'SS長崎浜町',
+  '1623': 'SS鹿児島中央',
+  '1625': 'SSスクエアモール（宇宿）',
+  '1647': 'SSアミュ大分',
+  '1650': 'SS那覇',
+  '1651': 'SSゆめタウン別府',
+  '1653': 'SSゆめタウン山口',
+  '1657': 'SS香椎',
+  '1658': 'SSゆめタウン大牟田',
+  '1659': 'SSゆめタウン行橋',
+  '1663': 'SSわさだ',
+  '1678': 'SSゆめタウン筑紫野',
+  '1680': 'SS下関',
+  '1682': 'SS姪浜',
+  '1683': 'SS徳山',
+  '1691': 'SS宇部',
+  '1718': 'DF天神地下街',
+  '1736': 'DFアミュ大分',
+  '1746': 'DF鹿児島',
+  '1747': 'DF長崎ココウォーク',
+  '1758': 'DFマークイズ',
+  '1760': 'DF浦添',
+  '1761': 'DFサクラマチ',
+  '1765': 'DF宮崎',
+  '1778': 'DFアミュ博多',
+  '1780': 'DF小倉'
+    };
 
     async function initLiff() {
       try {
@@ -137,16 +217,38 @@
       message.className = 'message ' + (isError ? 'error' : 'success');
     }
 
+    function setStoreFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const storeCode = params.get('store');
+
+      if (!storeCode) {
+        showMessage('店舗コードがありません', true);
+        document.getElementById('submitButton').disabled = true;
+        return;
+      }
+
+      const storeName = STORE_MAP[storeCode];
+
+      if (!storeName) {
+        showMessage('店舗コードが正しくありません', true);
+        document.getElementById('submitButton').disabled = true;
+        return;
+      }
+
+      document.getElementById('storeCode').value = storeCode;
+      document.getElementById('storeName').value = storeName;
+    }
+
     function validateInput(data) {
-  if (!data.salesDate) return '売上日を入力してください';
-  if (!data.totalSales) return '売上合計を入力してください';
+      if (!data.salesDate) return '売上日を入力してください';
+      if (!data.totalSales) return '売上合計を入力してください';
 
-  const total = Number(data.totalSales);
-  if (isNaN(total)) {
-    return '売上合計は数字で入力してください';
-  }
+      const total = Number(data.totalSales);
+      if (isNaN(total)) {
+        return '売上合計は数字で入力してください';
+      }
 
-  return '';
+      return '';
     }
 
     async function submitSales() {
@@ -155,12 +257,12 @@
       showMessage('');
 
       const data = {
-       salesDate: document.getElementById('salesDate').value,
-  storeCode: document.getElementById('storeCode').value,
-  storeName: document.getElementById('storeName').value,
-  totalSales: document.getElementById('totalSales').value,
-  note: document.getElementById('note').value,
-  inputUser: 'LINEテスト'
+        salesDate: document.getElementById('salesDate').value,
+        storeCode: document.getElementById('storeCode').value,
+        storeName: document.getElementById('storeName').value,
+        totalSales: document.getElementById('totalSales').value,
+        note: document.getElementById('note').value,
+        inputUser: ''
       };
 
       const errorMessage = validateInput(data);
@@ -170,37 +272,33 @@
         return;
       }
 
-      try {await fetch(WEB_APP_URL, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(data)
-  });
+      try {
+        await fetch(WEB_APP_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data)
+        });
 
-  showMessage('登録しました');
-  setTimeout(() => {
-    if (typeof liff !== 'undefined' && liff.isInClient()) {
-      liff.closeWindow();
-    }
-  }, 1200);
+        showMessage('登録しました');
+        setTimeout(() => {
+          if (typeof liff !== 'undefined' && liff.isInClient()) {
+            liff.closeWindow();
+          }
+        }, 1200);
 
-} catch (error) {
-  console.error(error);
-  showMessage('送信に失敗しました。通信状態をご確認ください。', true);
-  button.disabled = false;
-       
+      } catch (error) {
+        console.error(error);
+        showMessage('送信に失敗しました。通信状態をご確認ください。', true);
+        button.disabled = false;
       }
     }
 
     setToday();
+    setStoreFromUrl();
     initLiff();
   </script>
 </body>
-
 </html>
-
-
-
-
