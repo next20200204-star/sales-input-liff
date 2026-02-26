@@ -19,7 +19,7 @@
       background: #ffffff;
       padding: 20px;
       border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     }
 
     h1 {
@@ -36,7 +36,9 @@
       font-weight: bold;
     }
 
-    input, textarea, button {
+    input,
+    textarea,
+    button {
       width: 100%;
       box-sizing: border-box;
       font-size: 18px;
@@ -105,7 +107,7 @@
     <label for="note">備考（任意）</label>
     <textarea id="note" placeholder="必要な場合のみ入力"></textarea>
 
-    <button id="submitButton" onclick="submitSales()">送信する</button>
+    <button id="submitButton" type="button" onclick="submitSales()">送信する</button>
 
     <div id="message" class="message"></div>
     <div class="note">※ 店舗はQRコードから自動判定されます</div>
@@ -198,8 +200,11 @@
     };
 
     function setToday() {
-      const today = new Date().toISOString().split('T')[0];
-      document.getElementById('salesDate').value = today;
+      const now = new Date();
+      const yyyy = now.getFullYear();
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
+      const dd = String(now.getDate()).padStart(2, '0');
+      document.getElementById('salesDate').value = `${yyyy}-${mm}-${dd}`;
     }
 
     function showMessage(text, isError = false) {
@@ -238,6 +243,10 @@
       const total = Number(data.totalSales);
       if (isNaN(total)) {
         return '売上合計は数字で入力してください';
+      }
+
+      if (total < 0) {
+        return '売上合計は0以上で入力してください';
       }
 
       return '';
@@ -281,7 +290,6 @@
 
         document.body.appendChild(form);
         form.submit();
-        document.body.removeChild(form);
 
         showMessage('登録しました');
 
@@ -290,7 +298,10 @@
 
         setTimeout(() => {
           button.disabled = false;
-        }, 1000);
+          if (form && form.parentNode) {
+            form.parentNode.removeChild(form);
+          }
+        }, 2000);
 
       } catch (error) {
         console.error(error);
